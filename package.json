@@ -66,11 +66,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "colors": "^1.4.0",
-    "command-buffer": "^0.1.0",
-    "dotenv": "^16.4.7",
     "eventemitter3": "^5.0.1",
-    "function-rate-limit": "^1.1.0",
     "rxjs": "^7.8.1"
   },
   "devDependencies": {

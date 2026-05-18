@@ -2,8 +2,7 @@
 import { readFileSync } from "fs";
 import * as path from "path";
 
-import dotenv from "dotenv";
-dotenv.config();
+// dotenv stripped -- consumers handle their own env loading (1Password op:// injection)
 
 export interface Configuration {
   ci: string;
