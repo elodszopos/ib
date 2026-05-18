@@ -3,6 +3,7 @@
 import { bold, green, grey, red, yellow } from "./ansi-colors";
 import * as util from "util";
 
+
 const timeStamp = () => `[${new Date().toISOString().substring(11, 19)}]`;
 
 const debug = (...args: any[]) => {

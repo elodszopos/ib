@@ -1,5 +1,5 @@
-import CommandBuffer from "command-buffer";
-import rateLimit from "function-rate-limit";
+import { CommandBuffer } from "../../common/command-buffer";
+import { rateLimit } from "../../common/rate-limit";
 
 import { IBApi, IBApiCreationOptions } from "../../api/api";
 import { EventName } from "../../api/data/enum/event-name";

@@ -1,5 +1,6 @@
 import { bold, red, yellow } from "../../common/ansi-colors";
 import * as util from "util";
+
 import { Logger, LogLevel } from "../..";
 
 /**
