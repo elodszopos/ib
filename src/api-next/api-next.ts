@@ -1234,6 +1234,46 @@ export class IBApiNext {
     }
   };
 
+  /** tickString event handler -- parses numeric string ticks (e.g. LAST_TIMESTAMP) into the same MutableMarketData map */
+  private readonly onTickString = (
+    subscriptions: Map<number, IBApiNextSubscription<MutableMarketData>>,
+    reqId: number,
+    tickType: IBApiTickType,
+    value: string,
+  ): void => {
+    const subscription = subscriptions.get(reqId);
+    if (!subscription) {
+      return;
+    }
+
+    const numValue = Number(value);
+    if (!Number.isFinite(numValue)) {
+      return;
+    }
+
+    const cached = subscription.lastAllValue ?? new MutableMarketData();
+    const hasChanged = cached.has(tickType);
+
+    const updatedValue: MarketDataTick = {
+      value: numValue,
+      ingressTm: Date.now(),
+    };
+
+    cached.set(tickType, updatedValue);
+
+    if (hasChanged) {
+      subscription.next({
+        all: cached,
+        changed: new MutableMarketData([[tickType, updatedValue]]),
+      });
+    } else {
+      subscription.next({
+        all: cached,
+        added: new MutableMarketData([[tickType, updatedValue]]),
+      });
+    }
+  };
+
   /** tickOptionComputationHandler event handler */
   private readonly onTickOptionComputation = (
     subscriptions: Map<number, IBApiNextSubscription<MutableMarketData>>,
@@ -1579,6 +1619,7 @@ export class IBApiNext {
         [EventName.tickPrice, this.onTick],
         [EventName.tickSize, this.onTick],
         [EventName.tickGeneric, this.onTick],
+        [EventName.tickString, this.onTickString],
         [EventName.tickOptionComputation, this.onTickOptionComputation],
         [EventName.tickSnapshotEnd, this.onTickSnapshotEnd],
       ],
