@@ -352,6 +352,8 @@ export declare class IBApiNext {
     setMarketDataType(type: MarketDataType): void;
     /** tickPrice, tickSize and tickGeneric event handler */
     private readonly onTick;
+    /** tickString event handler -- parses numeric string ticks (e.g. LAST_TIMESTAMP) into the same MutableMarketData map */
+    private readonly onTickString;
     /** tickOptionComputationHandler event handler */
     private readonly onTickOptionComputation;
     /** tickSnapshotEnd event handler */

@@ -490,6 +490,36 @@ class IBApiNext {
                 });
             }
         };
+        /** tickString event handler -- parses numeric string ticks (e.g. LAST_TIMESTAMP) into the same MutableMarketData map */
+        this.onTickString = (subscriptions, reqId, tickType, value) => {
+            const subscription = subscriptions.get(reqId);
+            if (!subscription) {
+                return;
+            }
+            const numValue = Number(value);
+            if (!Number.isFinite(numValue)) {
+                return;
+            }
+            const cached = subscription.lastAllValue ?? new mutable_market_data_1.MutableMarketData();
+            const hasChanged = cached.has(tickType);
+            const updatedValue = {
+                value: numValue,
+                ingressTm: Date.now(),
+            };
+            cached.set(tickType, updatedValue);
+            if (hasChanged) {
+                subscription.next({
+                    all: cached,
+                    changed: new mutable_market_data_1.MutableMarketData([[tickType, updatedValue]]),
+                });
+            }
+            else {
+                subscription.next({
+                    all: cached,
+                    added: new mutable_market_data_1.MutableMarketData([[tickType, updatedValue]]),
+                });
+            }
+        };
         /** tickOptionComputationHandler event handler */
         this.onTickOptionComputation = (subscriptions, reqId, field, impliedVolatility, delta, optPrice, pvDividend, gamma, vega, theta, undPrice) => {
             // get subscription
@@ -1613,6 +1643,7 @@ class IBApiNext {
             [__1.EventName.tickPrice, this.onTick],
             [__1.EventName.tickSize, this.onTick],
             [__1.EventName.tickGeneric, this.onTick],
+            [__1.EventName.tickString, this.onTickString],
             [__1.EventName.tickOptionComputation, this.onTickOptionComputation],
             [__1.EventName.tickSnapshotEnd, this.onTickSnapshotEnd],
         ], `getMarketData+${JSON.stringify(contract)}:${genericTickList}:${snapshot}:${regulatorySnapshot}`);
