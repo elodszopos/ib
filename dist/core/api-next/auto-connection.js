@@ -59,14 +59,18 @@ class IBApiAutoConnection extends __1.default {
      * @param options [[IBApi]] Creation options.
      * @param logger The [[IBApiNextLogger]] logger instance ot receive log messages
      */
-    constructor(reconnectInterval, watchdogInterval, logger, options) {
+    constructor(reconnectInterval, watchdogInterval, logger, options, reconnectBackoffFactor = 1, reconnectMaxInterval = reconnectInterval) {
         super(options);
         this.reconnectInterval = reconnectInterval;
         this.watchdogInterval = watchdogInterval;
         this.logger = logger;
         this.options = options;
+        this.reconnectBackoffFactor = reconnectBackoffFactor;
+        this.reconnectMaxInterval = reconnectMaxInterval;
         /** true if auto re-connect is enabled, false otherwise. */
         this.autoReconnectEnabled = true;
+        /** Consecutive disconnect count -- reset on successful connect, drives backoff. */
+        this.consecutiveDisconnects = 0;
         /** The connection-state [[BehaviorSubject]]. */
         this._connectionState = new rxjs_1.BehaviorSubject(__1.ConnectionState.Disconnected);
         this.on(__1.EventName.connected, () => this.onConnected());
@@ -129,6 +133,7 @@ class IBApiAutoConnection extends __1.default {
         if (this._connectionState.getValue() !== __1.ConnectionState.Connected) {
             // signal connect state
             this._connectionState.next(__1.ConnectionState.Connected);
+            this.consecutiveDisconnects = 0;
             this.logger.info(LOG_TAG, `Successfully connected to TWS with client id ${this.currentClientId}.`);
             // cancel reconnect timer and run the connection watchdog
             this.stopReConnectTimer();
@@ -162,13 +167,15 @@ class IBApiAutoConnection extends __1.default {
         if (!this.reconnectInterval || !this.autoReconnectEnabled) {
             return;
         }
-        this.logger.info(LOG_TAG, `Re-Connecting to TWS in ${this.reconnectInterval / 1000}s...`);
+        // Exponential backoff: base * factor^attempts, capped at max
+        const delay = Math.min(this.reconnectInterval * Math.pow(this.reconnectBackoffFactor, this.consecutiveDisconnects), this.reconnectMaxInterval);
+        this.logger.info(LOG_TAG, `Re-Connecting to TWS in ${(delay / 1000).toFixed(1)}s (attempt ${this.consecutiveDisconnects + 1})...`);
         if (this.reconnectionTimeout) {
             clearTimeout(this.reconnectionTimeout);
         }
         this.reconnectionTimeout = setTimeout(() => {
             this.reConnect();
-        }, this.reconnectInterval);
+        }, delay);
     }
     /**
      * Stop the re-connection timer.
@@ -229,6 +236,7 @@ class IBApiAutoConnection extends __1.default {
      */
     onDisconnected() {
         this.logger.debug(LOG_TAG, "onDisconnected()");
+        this.consecutiveDisconnects++;
         // verify state and update state
         if (this.isConnected) {
             this.logger.debug(LOG_TAG, `Disconnecting client id ${this.currentClientId} from TWS (state-sync).`);

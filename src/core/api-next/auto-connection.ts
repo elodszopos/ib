@@ -36,6 +36,8 @@ export class IBApiAutoConnection extends IBApi {
     private readonly watchdogInterval: number,
     private readonly logger: Logger,
     public readonly options?: IBApiCreationOptions,
+    private readonly reconnectBackoffFactor: number = 1,
+    private readonly reconnectMaxInterval: number = reconnectInterval,
   ) {
     super(options);
     this.on(EventName.connected, () => this.onConnected());
@@ -61,6 +63,9 @@ export class IBApiAutoConnection extends IBApi {
 
   /** true if auto re-connect is enabled, false otherwise. */
   private autoReconnectEnabled = true;
+
+  /** Consecutive disconnect count -- reset on successful connect, drives backoff. */
+  private consecutiveDisconnects = 0;
 
   /** The auto re-connect timeout. */
   private reconnectionTimeout?: ReturnType<typeof setTimeout>;
@@ -136,6 +141,7 @@ export class IBApiAutoConnection extends IBApi {
       // signal connect state
 
       this._connectionState.next(ConnectionState.Connected);
+      this.consecutiveDisconnects = 0;
       this.logger.info(
         LOG_TAG,
         `Successfully connected to TWS with client id ${this.currentClientId}.`,
@@ -187,9 +193,15 @@ export class IBApiAutoConnection extends IBApi {
       return;
     }
 
+    // Exponential backoff: base * factor^attempts, capped at max
+    const delay = Math.min(
+      this.reconnectInterval * Math.pow(this.reconnectBackoffFactor, this.consecutiveDisconnects),
+      this.reconnectMaxInterval,
+    );
+
     this.logger.info(
       LOG_TAG,
-      `Re-Connecting to TWS in ${this.reconnectInterval / 1000}s...`,
+      `Re-Connecting to TWS in ${(delay / 1000).toFixed(1)}s (attempt ${this.consecutiveDisconnects + 1})...`,
     );
 
     if (this.reconnectionTimeout) {
@@ -198,7 +210,7 @@ export class IBApiAutoConnection extends IBApi {
 
     this.reconnectionTimeout = setTimeout(() => {
       this.reConnect();
-    }, this.reconnectInterval);
+    }, delay);
   }
 
   /**
@@ -275,6 +287,7 @@ export class IBApiAutoConnection extends IBApi {
    */
   public onDisconnected(): void {
     this.logger.debug(LOG_TAG, "onDisconnected()");
+    this.consecutiveDisconnects++;
 
     // verify state and update state
     if (this.isConnected) {

@@ -130,6 +130,20 @@ export interface IBApiNextCreationOptions {
   reconnectInterval?: number;
 
   /**
+   * Multiplier applied to reconnectInterval on each consecutive disconnect.
+   * E.g. factor=2 with interval=1000 gives delays: 1s, 2s, 4s, 8s...
+   * Resets to base interval on successful connect. Default is 1 (no backoff).
+   */
+  reconnectBackoffFactor?: number;
+
+  /**
+   * Upper bound for the computed reconnect delay in milliseconds.
+   * Prevents exponential backoff from growing unbounded. Default is
+   * reconnectInterval (no growth).
+   */
+  reconnectMaxInterval?: number;
+
+  /**
    * The connection-watchdog timeout interval in seconds.
    *
    * The connection-watchdog monitors the socket connection to TWS/IB Gateway for
@@ -197,6 +211,8 @@ export class IBApiNext {
       (options?.connectionWatchdogInterval ?? 0) * 1000,
       this.logger,
       options,
+      options?.reconnectBackoffFactor ?? 1,
+      options?.reconnectMaxInterval ?? (options?.reconnectInterval ?? 0),
     );
     this.subscriptions = new IBApiNextSubscriptionRegistry(this.api, this);
 

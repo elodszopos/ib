@@ -16,6 +16,8 @@ export declare class IBApiAutoConnection extends IBApi {
     private readonly watchdogInterval;
     private readonly logger;
     readonly options?: IBApiCreationOptions;
+    private readonly reconnectBackoffFactor;
+    private readonly reconnectMaxInterval;
     /**
      * Create an [[IBApiAutoConnection]] object.
      *
@@ -26,7 +28,7 @@ export declare class IBApiAutoConnection extends IBApi {
      * @param options [[IBApi]] Creation options.
      * @param logger The [[IBApiNextLogger]] logger instance ot receive log messages
      */
-    constructor(reconnectInterval: number, watchdogInterval: number, logger: Logger, options?: IBApiCreationOptions);
+    constructor(reconnectInterval: number, watchdogInterval: number, logger: Logger, options?: IBApiCreationOptions, reconnectBackoffFactor?: number, reconnectMaxInterval?: number);
     /**
      * If defined, this is the client id that will be used on all
      * re-connection attempt. If undefined [[currentClientId]] will
@@ -37,6 +39,8 @@ export declare class IBApiAutoConnection extends IBApi {
     private currentClientId;
     /** true if auto re-connect is enabled, false otherwise. */
     private autoReconnectEnabled;
+    /** Consecutive disconnect count -- reset on successful connect, drives backoff. */
+    private consecutiveDisconnects;
     /** The auto re-connect timeout. */
     private reconnectionTimeout?;
     /** The connection-watchdog timeout. */

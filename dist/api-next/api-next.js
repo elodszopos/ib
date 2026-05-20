@@ -1267,7 +1267,7 @@ class IBApiNext {
         };
         this.logger = new logger_1.IBApiNextLogger(options?.logger ?? new console_logger_1.ConsoleLogger());
         // create the IBApiAutoConnection and subscription registry
-        this.api = new auto_connection_1.IBApiAutoConnection(options?.reconnectInterval ?? 0, (options?.connectionWatchdogInterval ?? 0) * 1000, this.logger, options);
+        this.api = new auto_connection_1.IBApiAutoConnection(options?.reconnectInterval ?? 0, (options?.connectionWatchdogInterval ?? 0) * 1000, this.logger, options, options?.reconnectBackoffFactor ?? 1, options?.reconnectMaxInterval ?? (options?.reconnectInterval ?? 0));
         this.subscriptions = new subscription_registry_1.IBApiNextSubscriptionRegistry(this.api, this);
         // setup error event handler (bound to lifetime of IBApiAutoConnection so we never unregister)
         this.api.on(__1.EventName.error, (error, code, reqId, advancedOrderReject) => {
