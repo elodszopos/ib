@@ -3271,6 +3271,72 @@ export class IBApiNext {
       .pipe(map((v: { all: TickByTickAllLast }) => v.all));
   }
 
+  /** RealTimeBar event handler */
+  private readonly onRealTimeBar = (
+    subscriptions: Map<number, IBApiNextSubscription<Bar>>,
+    reqId: number,
+    time: number,
+    open: number,
+    high: number,
+    low: number,
+    close: number,
+    volume: number,
+    wap: number,
+    count: number,
+  ): void => {
+    const subscription = subscriptions.get(reqId);
+    if (!subscription) {
+      return;
+    }
+
+    const bar: Bar = {
+      time: time.toString(),
+      open,
+      high,
+      low,
+      close,
+      volume,
+      WAP: wap,
+      count,
+    };
+    subscription.next({ all: bar });
+  };
+
+  /**
+   * Subscribe to real-time 5-second OHLCV bars.
+   *
+   * IB aggregates all trades server-side into 5-second bars and pushes them.
+   * The Observable never completes -- unsubscribe to cancel.
+   *
+   * @param contract The contract for which to receive bars.
+   * @param whatToShow The type of data (TRADES, MIDPOINT, BID, ASK).
+   * @param useRTH Set to true to only receive bars during Regular Trading Hours.
+   */
+  getRealTimeBars(
+    contract: Contract,
+    whatToShow: WhatToShow = WhatToShow.TRADES,
+    useRTH: boolean = false,
+  ): Observable<Bar> {
+    return this.subscriptions
+      .register<Bar>(
+        (reqId) => {
+          this.api.reqRealTimeBars(
+            reqId,
+            contract,
+            5, // barSize is always 5 seconds for reqRealTimeBars
+            whatToShow,
+            useRTH,
+          );
+        },
+        (reqId) => {
+          this.api.cancelRealTimeBars(reqId);
+        },
+        [[EventName.realtimeBar, this.onRealTimeBar]],
+        `getRealTimeBars+${JSON.stringify(contract)}:${whatToShow}:${useRTH}`,
+      )
+      .pipe(map((v: { all: Bar }) => v.all));
+  }
+
   private readonly onFundamentalData = (
     subscriptions: Map<number, IBApiNextSubscription<string>>,
     reqId: number,

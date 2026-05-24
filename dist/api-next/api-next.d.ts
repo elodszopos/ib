@@ -808,6 +808,19 @@ export declare class IBApiNext {
      * @param ignoreSize If true, the size of the tick will be ignored.
      */
     getTickByTickAllLastDataUpdates(contract: Contract, numberOfTicks?: number, ignoreSize?: boolean): Observable<TickByTickAllLast>;
+    /** RealTimeBar event handler */
+    private readonly onRealTimeBar;
+    /**
+     * Subscribe to real-time 5-second OHLCV bars.
+     *
+     * IB aggregates all trades server-side into 5-second bars and pushes them.
+     * The Observable never completes -- unsubscribe to cancel.
+     *
+     * @param contract The contract for which to receive bars.
+     * @param whatToShow The type of data (TRADES, MIDPOINT, BID, ASK).
+     * @param useRTH Set to true to only receive bars during Regular Trading Hours.
+     */
+    getRealTimeBars(contract: Contract, whatToShow?: WhatToShow, useRTH?: boolean): Observable<Bar>;
     private readonly onFundamentalData;
     /**
      * Get the fundamental data of a contract.

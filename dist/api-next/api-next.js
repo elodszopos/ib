@@ -1289,6 +1289,24 @@ class IBApiNext {
             current.contract = contract;
             subscription.next({ all: current });
         };
+        /** RealTimeBar event handler */
+        this.onRealTimeBar = (subscriptions, reqId, time, open, high, low, close, volume, wap, count) => {
+            const subscription = subscriptions.get(reqId);
+            if (!subscription) {
+                return;
+            }
+            const bar = {
+                time: time.toString(),
+                open,
+                high,
+                low,
+                close,
+                volume,
+                WAP: wap,
+                count,
+            };
+            subscription.next({ all: bar });
+        };
         this.onFundamentalData = (subscriptions, reqId, data) => {
             const sub = subscriptions.get(reqId);
             subscriptions.delete(reqId);
@@ -2148,6 +2166,26 @@ class IBApiNext {
                 this.onTickByTickAllLastDataUpdates(contract),
             ],
         ], `${JSON.stringify(contract)}:${numberOfTicks}:${ignoreSize}`)
+            .pipe((0, operators_1.map)((v) => v.all));
+    }
+    /**
+     * Subscribe to real-time 5-second OHLCV bars.
+     *
+     * IB aggregates all trades server-side into 5-second bars and pushes them.
+     * The Observable never completes -- unsubscribe to cancel.
+     *
+     * @param contract The contract for which to receive bars.
+     * @param whatToShow The type of data (TRADES, MIDPOINT, BID, ASK).
+     * @param useRTH Set to true to only receive bars during Regular Trading Hours.
+     */
+    getRealTimeBars(contract, whatToShow = __1.WhatToShow.TRADES, useRTH = false) {
+        return this.subscriptions
+            .register((reqId) => {
+            this.api.reqRealTimeBars(reqId, contract, 5, // barSize is always 5 seconds for reqRealTimeBars
+            whatToShow, useRTH);
+        }, (reqId) => {
+            this.api.cancelRealTimeBars(reqId);
+        }, [[__1.EventName.realtimeBar, this.onRealTimeBar]], `getRealTimeBars+${JSON.stringify(contract)}:${whatToShow}:${useRTH}`)
             .pipe((0, operators_1.map)((v) => v.all));
     }
     /**
