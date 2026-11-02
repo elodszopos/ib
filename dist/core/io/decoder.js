@@ -2097,7 +2097,7 @@ class Decoder {
         if (lastTradeDateOrContractMonth.length) {
             const split = lastTradeDateOrContractMonth.indexOf("-") > 0
                 ? lastTradeDateOrContractMonth.split("-")
-                : lastTradeDateOrContractMonth.split("\\s+");
+                : lastTradeDateOrContractMonth.split(/\s+/);
             if (split.length > 0) {
                 if (isBond) {
                     contract.maturity = split[0];
